@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/informalsystems/tm-load-test/internal/logging"
 	"github.com/sirupsen/logrus"
@@ -33,6 +34,8 @@ var (
 func buildCLI(cli *CLIConfig, logger logging.Logger) *cobra.Command {
 	cobra.OnInitialize(func() { initLogLevel(logger) })
 	var cfg Config
+	cfg.StatsOutputFile = fmt.Sprintf("./reports/bench-report-%s.csv", time.Now().Format(time.RFC3339))
+
 	rootCmd := &cobra.Command{
 		Use:   cli.AppName,
 		Short: cli.AppShortDesc,
@@ -63,7 +66,7 @@ func buildCLI(cli *CLIConfig, logger logging.Logger) *cobra.Command {
 	rootCmd.PersistentFlags().IntVar(&cfg.MaxEndpoints, "max-endpoints", 0, "The maximum number of endpoints to use for testing, where 0 means unlimited")
 	rootCmd.PersistentFlags().IntVar(&cfg.PeerConnectTimeout, "peer-connect-timeout", 600, "The number of seconds to wait for all required peers to connect if expect-peers > 0")
 	rootCmd.PersistentFlags().IntVar(&cfg.MinConnectivity, "min-peer-connectivity", 0, "The minimum number of peers to which each peer must be connected before starting the load test")
-	rootCmd.PersistentFlags().StringVar(&cfg.StatsOutputFile, "stats-output", "", "Where to store aggregate statistics (in CSV format) for the load test")
+	//rootCmd.PersistentFlags().StringVar(&cfg.StatsOutputFile, "stats-output", "", "Where to store aggregate statistics (in CSV format) for the load test")
 	rootCmd.PersistentFlags().BoolVarP(&flagVerbose, "verbose", "v", false, "Increase output logging verbosity to DEBUG level")
 
 	var coordCfg CoordinatorConfig

@@ -10,14 +10,14 @@ type ClientFactory interface {
 
 	// NewClient must instantiate a new load testing client, or produce an error
 	// if that process fails.
-	NewClient(cfg Config) (Client, error)
+	NewClient(cfg Config, slaveID string) (Client, error)
 }
 
 // Client generates transactions to be sent to a specific endpoint.
 type Client interface {
 	// GenerateTx must generate a raw transaction to be sent to the relevant
 	// broadcast_tx method for a given endpoint.
-	GenerateTx() ([]byte, error)
+	GenerateTx(count int) ([]byte, error)
 }
 
 // Our global registry of client factories

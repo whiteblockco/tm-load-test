@@ -37,8 +37,8 @@ func NewTransactorGroup() *TransactorGroup {
 // Add will instantiate a new Transactor with the given parameters. If
 // instantiation fails it'll automatically shut down and close all other
 // transactors, returning the error.
-func (g *TransactorGroup) Add(remoteAddr string, config *Config) error {
-	t, err := NewTransactor(remoteAddr, config)
+func (g *TransactorGroup) Add(remoteAddr string, config *Config, slaveID string) error {
+	t, err := NewTransactor(remoteAddr, config, slaveID)
 	if err != nil {
 		g.close()
 		return err
@@ -49,10 +49,10 @@ func (g *TransactorGroup) Add(remoteAddr string, config *Config) error {
 	return nil
 }
 
-func (g *TransactorGroup) AddAll(cfg *Config) error {
+func (g *TransactorGroup) AddAll(cfg *Config, slaveID string) error {
 	for _, endpoint := range cfg.Endpoints {
 		for c := 0; c < cfg.Connections; c++ {
-			if err := g.Add(endpoint, cfg); err != nil {
+			if err := g.Add(endpoint, cfg, slaveID); err != nil {
 				return err
 			}
 		}

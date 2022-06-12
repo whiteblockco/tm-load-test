@@ -2,8 +2,11 @@ package loadtest
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -419,8 +422,40 @@ func (c *Coordinator) logTestingProgress(completed int) {
 	}
 }
 
+func getCurrentBlockHeight() string {
+	resp, err := http.Get("http://0.0.0.0:37041/abci_info")
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+	var result map[string]interface{}
+	err = json.Unmarshal(data, &result)
+	if err != nil {
+		return ""
+	}
+	r2 := result["result"].(map[string]interface{})
+	r3 := r2["response"].(map[string]interface{})
+	height := r3["last_block_height"].(string)
+	heightInt, err := strconv.Atoi(height)
+	if err != nil {
+		return ""
+	}
+	nextHeight := heightInt + 1
+	return fmt.Sprint(nextHeight)
+}
+
 func (c *Coordinator) startLoadTest() error {
 	c.logger.Info("All workers connected - starting load test", "count", len(c.workers))
+	start := time.Now().UTC().Format(time.RFC3339Nano)
+	height := getCurrentBlockHeight()
+
+	c.logger.Info(fmt.Sprintf("Test Start at : %s", start))
+	c.logger.Info(fmt.Sprintf("Help for report command : ./build/report %s %s ", start, height))
 	for id, rw := range c.workers {
 		if err := rw.StartLoadTest(); err != nil {
 			c.logger.Info("Failed to start load test for worker", "id", id, "err", err)

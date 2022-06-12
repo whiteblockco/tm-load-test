@@ -82,7 +82,7 @@ func (f *KVStoreClientFactory) ValidateConfig(cfg Config) error {
 	return nil
 }
 
-func (f *KVStoreClientFactory) NewClient(cfg Config) (Client, error) {
+func (f *KVStoreClientFactory) NewClient(cfg Config, slaveID string) (Client, error) {
 	keyPrefix := []byte(tmrand.Str(KVStoreClientIDLen))
 	keySuffixLen, err := requiredKVStoreSuffixLen(cfg.MaxTxsPerEndpoint())
 	if err != nil {
@@ -111,7 +111,7 @@ func requiredKVStoreSuffixLen(maxTxCount uint64) (int, error) {
 	return -1, fmt.Errorf("cannot cater for maximum tx count of %d (too many unique transactions)", maxTxCount)
 }
 
-func (c *KVStoreClient) GenerateTx() ([]byte, error) {
+func (c *KVStoreClient) GenerateTx(count int) ([]byte, error) {
 	k := append(c.keyPrefix, []byte(tmrand.Str(c.keySuffixLen))...)
 	v := []byte(tmrand.Str(c.valueLen))
 	return append(k, append([]byte("="), v...)...), nil

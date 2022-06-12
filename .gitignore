@@ -28,3 +28,7 @@ __pycache__
 venv/
 /deployment/hosts
 coverage.txt
+
+
+reports/*
+!reports/.gitkeep

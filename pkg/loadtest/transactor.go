@@ -55,7 +55,7 @@ type Transactor struct {
 
 // NewTransactor initiates a WebSockets connection to the given host address.
 // Must be a valid WebSockets URL, e.g. "ws://host:port/websocket"
-func NewTransactor(remoteAddr string, config *Config) (*Transactor, error) {
+func NewTransactor(remoteAddr string, config *Config, slaveID string) (*Transactor, error) {
 	u, err := url.Parse(remoteAddr)
 	if err != nil {
 		return nil, err
@@ -67,7 +67,7 @@ func NewTransactor(remoteAddr string, config *Config) (*Transactor, error) {
 	if !exists {
 		return nil, fmt.Errorf("unrecognized client factory: %s", config.ClientFactory)
 	}
-	client, err := clientFactory.NewClient(*config)
+	client, err := clientFactory.NewClient(*config, slaveID)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +176,7 @@ func (t *Transactor) sendLoop() {
 	})
 
 	pingTicker := time.NewTicker(connPingPeriod)
-	timeLimitTicker := time.NewTicker(time.Duration(t.config.Time) * time.Second)
+	timeLimitTicker := time.NewTicker(time.Duration(t.config.Time)*time.Second + (200 * time.Millisecond))
 	sendTicker := time.NewTicker(time.Duration(t.config.SendPeriod) * time.Second)
 	progressTicker := time.NewTicker(t.getProgressCallbackInterval())
 	defer func() {
@@ -225,12 +225,14 @@ func (t *Transactor) writeTx(tx []byte) error {
 		return err
 	}
 	_ = t.conn.SetWriteDeadline(time.Now().Add(connSendTimeout))
-	return t.conn.WriteJSON(rpctypes.RPCRequest{
+	req := rpctypes.RPCRequest{
 		JSONRPC: "2.0",
 		ID:      jsonRPCID,
 		Method:  t.broadcastTxMethod,
 		Params:  json.RawMessage(paramsJSON),
-	})
+	}
+
+	return t.conn.WriteJSON(req)
 }
 
 func (t *Transactor) mustStop() bool {
@@ -262,17 +264,35 @@ func (t *Transactor) sendTransactions() error {
 	var sent int
 	var sentBytes int64
 	defer func() { t.trackSentTxs(sent, sentBytes) }()
-	t.logger.Info("Sending batch of transactions", "toSend", toSend)
+	//t.logger.Info("Sending batch of transactions", "toSend", toSend)
 	batchStartTime := time.Now()
 	for ; sent < toSend; sent++ {
-		tx, err := t.client.GenerateTx()
+		tx, err := t.client.GenerateTx(sent)
 		if err != nil {
 			return err
 		}
-		if err := t.writeTx(tx); err != nil {
+		txBase64 := base64.StdEncoding.EncodeToString(tx)
+		paramsJSON, err := json.Marshal(map[string]interface{}{"tx": txBase64})
+		if err != nil {
 			return err
 		}
-		sentBytes += int64(len(tx))
+		_ = t.conn.SetWriteDeadline(time.Now().Add(connSendTimeout))
+		rpcReq := rpctypes.RPCRequest{
+			JSONRPC: "2.0",
+			ID:      jsonRPCID,
+			Method:  t.broadcastTxMethod,
+			Params:  json.RawMessage(paramsJSON),
+		}
+
+		if err := t.conn.WriteJSON(rpcReq); err != nil {
+			return err
+		}
+		rpcReqBytes, err := json.Marshal(rpcReq)
+		if err != nil {
+			return err
+		}
+
+		sentBytes += int64(len(rpcReqBytes))
 		// if we have to make way for the next batch
 		if time.Since(batchStartTime) >= time.Duration(t.config.SendPeriod)*time.Second {
 			break

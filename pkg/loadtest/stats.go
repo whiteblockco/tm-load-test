@@ -3,6 +3,7 @@ package loadtest
 import (
 	"encoding/csv"
 	"fmt"
+	logger "github.com/sirupsen/logrus"
 	"os"
 )
 
@@ -55,5 +56,6 @@ func writeAggregateStats(filename string, stats AggregateStats) error {
 		{"avg_tx_rate", fmt.Sprintf("%.6f", stats.AvgTxRate), "transactions per second"},
 		{"avg_data_rate", fmt.Sprintf("%.6f", stats.AvgDataRate), "bytes per second"},
 	}
+	logger.Infof("Load test result: %+v", records)
 	return w.WriteAll(records)
 }

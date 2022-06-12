@@ -133,7 +133,6 @@ func getTendermintNetworkPeers(
 		peer.SuccessfullyQueried = false
 
 		go func(peer_ *tendermintPeerInfo) {
-
 			netInfo, err := peer_.Client.NetInfo(context.Background())
 			if err != nil {
 				logger.Debug("Failed to query peer - skipping", "addr", peer_.Addr, "err", err)

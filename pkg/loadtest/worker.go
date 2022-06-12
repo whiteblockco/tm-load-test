@@ -247,7 +247,7 @@ func (w *Worker) executeLoadTest() error {
 	w.logger.Info("Connecting to remote endpoints")
 	tg := NewTransactorGroup()
 	cfg := w.Config()
-	if err := tg.AddAll(&cfg); err != nil {
+	if err := tg.AddAll(&cfg, w.ID()); err != nil {
 		return err
 	}
 	tg.SetProgressCallback(workerUpdateInterval, w.reportProgress)

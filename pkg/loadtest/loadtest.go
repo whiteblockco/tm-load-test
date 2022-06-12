@@ -30,7 +30,7 @@ func ExecuteStandalone(cfg Config) error {
 
 	logger.Info("Connecting to remote endpoints")
 	tg := NewTransactorGroup()
-	if err := tg.AddAll(&cfg); err != nil {
+	if err := tg.AddAll(&cfg, ""); err != nil {
 		return err
 	}
 	logger.Info("Initiating load test")
