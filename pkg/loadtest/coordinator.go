@@ -263,7 +263,7 @@ func (c *Coordinator) receiveTestingUpdates() error {
 	progressTicker := time.NewTicker(coordProgressUpdateInterval)
 	defer progressTicker.Stop()
 
-	c.startTime = time.Now()
+	c.startTime = time.Now().Add(3200 * time.Millisecond)
 	c.lastProgressUpdate = c.startTime
 
 	for {
@@ -368,6 +368,9 @@ func (c *Coordinator) ReceiveWorkerUpdate(msg workerMsg) {
 }
 
 func (c *Coordinator) logTestingProgress(completed int) {
+	overallElapsed := time.Since(c.startTime).Seconds()
+	elapsed := time.Since(c.lastProgressUpdate).Seconds()
+
 	totalTxs := 0
 	for _, txCount := range c.totalTxsPerWorker {
 		totalTxs += txCount
@@ -376,8 +379,6 @@ func (c *Coordinator) logTestingProgress(completed int) {
 	for _, txBytes := range c.totalBytesPerWorker {
 		totalBytes += txBytes
 	}
-	overallElapsed := time.Since(c.startTime).Seconds()
-	elapsed := time.Since(c.lastProgressUpdate).Seconds()
 
 	overallAvgRate := float64(0)
 	avgRate := float64(0)
